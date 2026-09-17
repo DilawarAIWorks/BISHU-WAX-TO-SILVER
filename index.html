@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="BISHU — From Wax to Silver. Carve your ring in wax. We cast it in sterling silver and finish it for you.">
+  <title>BISHU — From Wax to Silver | Hand-Carved Bespoke Jewelry</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Skip to main content for accessibility -->
+  <a href="#process" class="skip-link">Skip to process</a>
+
+  <!-- Header / Navigation -->
+  <header class="site-header" id="site-header">
+    <div class="header-inner">
+      <a href="#" class="brand-logo" aria-label="BISHU Home">
+        <span class="logo-text">BISHU</span>
+        <span class="logo-sub">WAX TO SILVER</span>
+      </a>
+
+      <nav class="site-nav" aria-label="Primary Navigation">
+        <ul class="nav-list">
+          <li><a href="#hero-track" class="nav-link active" data-nav="hero">The Animation</a></li>
+          <li><a href="#process" class="nav-link" data-nav="process">Process</a></li>
+          <li><a href="#materials" class="nav-link" data-nav="materials">Materials</a></li>
+          <li><a href="#the-ring" class="nav-link" data-nav="the-ring">The Ring</a></li>
+        </ul>
+      </nav>
+
+      <div class="header-actions">
+        <div class="stage-pill" id="header-stage-pill" aria-live="polite">
+          <span class="stage-dot"></span>
+          <span class="stage-text">01 / CARVE</span>
+        </div>
+        <a href="#cta" class="btn btn-header">Create Your Ring</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <!-- HERO SCROLL TRACK (Pinned animation container) -->
+    <section class="hero-scroll-track" id="hero-track" aria-label="Interactive Product Transformation Animation">
+      <div class="hero-sticky-container">
+        
+        <!-- Hero Editorial Header (Fades smoothly as user scrolls) -->
+        <div class="hero-overlay-top" id="hero-overlay-top">
+          <span class="hero-eyebrow">A Physical Material Transformation</span>
+          <h1 class="hero-title">From Wax to Silver.</h1>
+          <p class="hero-lead">Carve your ring in wax. We cast it in sterling silver and finish it for you.</p>
+        </div>
+
+        <!-- Center Stage: Ring Animation Frame & Canvas -->
+        <div class="hero-stage-wrapper">
+          <!-- Floating Stage Indicator (Desktop Left) -->
+          <aside class="hero-overlay-stage" id="hero-stage-card" aria-label="Current Stage Information">
+            <div class="stage-card-indicator">
+              <span class="stage-card-number" id="stage-card-number">01</span>
+              <span class="stage-card-divider">/</span>
+              <span class="stage-card-total">04</span>
+            </div>
+            <div class="stage-card-body">
+              <h2 class="stage-card-title" id="stage-card-title">Hand Carving</h2>
+              <p class="stage-card-desc" id="stage-card-desc">High-density blue jeweler's wax shaped with blade and file to your personal ergonomics.</p>
+            </div>
+          </aside>
+
+          <!-- The Canvas Stage Container (Guaranteed Aspect Fit) -->
+          <div class="canvas-stage" id="canvas-stage">
+            <canvas id="hero-canvas" width="1920" height="1080" role="img" aria-label="Frame sequence showing blue wax carved ring transformed through casting into polished sterling silver"></canvas>
+            
+            <!-- Loading Overlay -->
+            <div class="canvas-loader" id="canvas-loader" aria-hidden="false">
+              <div class="loader-content">
+                <span class="loader-mark">BISHU</span>
+                <div class="loader-bar-wrap">
+                  <div class="loader-bar" id="loader-bar"></div>
+                </div>
+                <span class="loader-status" id="loader-status">Preparing sequence</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hero Bottom Dock: Scrub Bar & Navigation (Never overlaps the ring) -->
+        <div class="hero-overlay-bottom">
+          <div class="scrub-hud">
+            <!-- Stage quick jump tabs -->
+            <div class="stage-quick-tabs" role="tablist" aria-label="Jump to animation stage">
+              <button class="stage-tab active" data-stage="1" role="tab" aria-selected="true">
+                <span class="tab-index">01</span>
+                <span class="tab-label">Carve Wax</span>
+              </button>
+              <button class="stage-tab" data-stage="2" role="tab" aria-selected="false">
+                <span class="tab-index">02</span>
+                <span class="tab-label">Lost-Wax Cast</span>
+              </button>
+              <button class="stage-tab" data-stage="3" role="tab" aria-selected="false">
+                <span class="tab-index">03</span>
+                <span class="tab-label">Refine &amp; Buff</span>
+              </button>
+              <button class="stage-tab" data-stage="4" role="tab" aria-selected="false">
+                <span class="tab-index">04</span>
+                <span class="tab-label">Sterling Silver</span>
+              </button>
+            </div>
+
+            <!-- Interactive timeline progress track -->
+            <div class="timeline-bar-container" id="timeline-container" title="Click or drag to scrub sequence">
+              <div class="timeline-track">
+                <div class="timeline-progress" id="timeline-progress"></div>
+                <div class="timeline-thumb" id="timeline-thumb"></div>
+              </div>
+              <div class="timeline-meta">
+                <span class="timeline-scroll-hint">
+                  <svg class="scroll-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <polyline points="19 12 12 19 5 12"></polyline>
+                  </svg>
+                  Scroll down to transform
+                </span>
+                <span class="timeline-frame-counter" id="frame-counter">FRAME 001 / 168</span>
+              </div>
+            </div>
+            <!-- Reduced Motion Fallback Scrub Control -->
+            <div class="reduced-motion-control" id="reduced-motion-control" aria-hidden="true">
+              <span class="reduced-motion-label">Precision Scrubber:</span>
+              <input type="range" id="reduced-motion-slider" min="1" max="168" value="1" step="1" aria-label="Scrub animation frames manually">
+              <span class="reduced-motion-val" id="reduced-motion-val">Frame 001 / 168</span>
+            </div>
+          </div>
+
+          <!-- Explore Process Anchor CTA -->
+          <a href="#process" class="hero-scroll-btn" aria-label="Scroll to process breakdown">
+            <span>Explore the Process</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </a>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION: THE CONCEPT / PHILOSOPHY -->
+    <section class="section section-philosophy" id="philosophy">
+      <div class="container">
+        <div class="philosophy-grid">
+          <div class="philosophy-header">
+            <span class="section-badge">The Concept</span>
+            <h2 class="section-title">You shape the form.<br>We immortalize it in silver.</h2>
+          </div>
+          <div class="philosophy-body">
+            <p class="lead-text">
+              BISHU bridges the intimate world of personal making with time-honored foundry casting. You begin with an unformed block of blue jeweler's wax, shaving and sculpting every contour to match your own hands.
+            </p>
+            <p class="secondary-text">
+              Once carved, your exact wax master is invested, burned out, and cast into solid sterling silver. The ridges, tool marks, and organic facets you create remain preserved forever in solid metal.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION: THREE-STAGE PROCESS STORY -->
+    <section class="section section-process" id="process">
+      <div class="container">
+        <div class="section-header-centered">
+          <span class="section-badge">The Craft</span>
+          <h2 class="section-title">The Three Stages</h2>
+          <p class="section-subtitle">A seamless journey from malleable blue wax to finished heirloom jewelry.</p>
+        </div>
+
+        <div class="process-cards">
+          <!-- Stage 1 Card -->
+          <article class="process-card" data-stage-target="1">
+            <div class="card-visual">
+              <img src="assets/frames/ezgif-frame-040.jpg" alt="Carving the blue wax ring blank with a jeweler's chisel" loading="lazy">
+              <span class="card-tag">Stage 01</span>
+            </div>
+            <div class="card-content">
+              <div class="card-meta">
+                <span class="material-name">Blue Jeweler's Wax</span>
+                <span class="frame-stamp">Frames 001–054</span>
+              </div>
+              <h3 class="card-title">01 · Carve</h3>
+              <p class="card-desc">
+                Blue jewelry wax. You shape, bevel, and carve your own ring using fine hand tools. The wax gives immediate tactile feedback, allowing organic forms or precise lines.
+              </p>
+              <button type="button" class="btn-text-link jump-to-stage-btn" data-target-frame="25">
+                View Carving Sequence &rarr;
+              </button>
+            </div>
+          </article>
+
+          <!-- Stage 2 Card -->
+          <article class="process-card" data-stage-target="2">
+            <div class="card-visual">
+              <img src="assets/frames/ezgif-frame-080.jpg" alt="Molten sterling silver poured into the graphite flask mold" loading="lazy">
+              <span class="card-tag">Stage 02</span>
+            </div>
+            <div class="card-content">
+              <div class="card-meta">
+                <span class="material-name">Molten Sterling Silver</span>
+                <span class="frame-stamp">Frames 055–100</span>
+              </div>
+              <h3 class="card-title">02 · Cast</h3>
+              <p class="card-desc">
+                The wax pattern is transformed through lost-wax casting into solid silver. Molten 925 sterling silver fills the inverted mold cavity, replacing the wax in exact detail.
+              </p>
+              <button type="button" class="btn-text-link jump-to-stage-btn" data-target-frame="75">
+                View Casting Sequence &rarr;
+              </button>
+            </div>
+          </article>
+
+          <!-- Stage 3 Card -->
+          <article class="process-card" data-stage-target="3">
+            <div class="card-visual">
+              <img src="assets/frames/ezgif-frame-140.jpg" alt="High polish buffing wheel finishing the sterling silver ring" loading="lazy">
+              <span class="card-tag">Stage 03</span>
+            </div>
+            <div class="card-content">
+              <div class="card-meta">
+                <span class="material-name">Polished 925 Silver</span>
+                <span class="frame-stamp">Frames 101–168</span>
+              </div>
+              <h3 class="card-title">03 · Finish</h3>
+              <p class="card-desc">
+                The raw silver ring is refined, sanded, and polished into the finished piece. Rotary tools smooth the internal fit before a cotton buffing wheel imparts a luminous mirror sheen.
+              </p>
+              <button type="button" class="btn-text-link jump-to-stage-btn" data-target-frame="135">
+                View Finishing Sequence &rarr;
+              </button>
+            </div>
+          </article>
+        </div>
+
+        <!-- Sequential Transformation Strip -->
+        <div class="transformation-strip" aria-label="Visual Transformation Progression">
+          <div class="strip-step">
+            <span class="strip-dot blue"></span>
+            <span class="strip-label">Blue Wax Blank</span>
+          </div>
+          <div class="strip-arrow">&rarr;</div>
+          <div class="strip-step">
+            <span class="strip-dot carving"></span>
+            <span class="strip-label">Hand Carved Form</span>
+          </div>
+          <div class="strip-arrow">&rarr;</div>
+          <div class="strip-step">
+            <span class="strip-dot mold"></span>
+            <span class="strip-label">Investment Cast</span>
+          </div>
+          <div class="strip-arrow">&rarr;</div>
+          <div class="strip-step">
+            <span class="strip-dot raw"></span>
+            <span class="strip-label">Raw Silver</span>
+          </div>
+          <div class="strip-arrow">&rarr;</div>
+          <div class="strip-step">
+            <span class="strip-dot polish"></span>
+            <span class="strip-label">Polished 925 Silver</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION: MATERIALS & CRAFTSMANSHIP -->
+    <section class="section section-materials" id="materials">
+      <div class="container">
+        <div class="materials-wrapper">
+          <div class="materials-info">
+            <span class="section-badge">Raw Materials</span>
+            <h2 class="section-title">Two Materials.<br>One Continuous Form.</h2>
+            <p class="lead-text">
+              The purity of the finished ring depends entirely on the integrity of the carving wax and the composition of the casting alloy.
+            </p>
+            
+            <div class="materials-comparison">
+              <div class="material-item">
+                <div class="material-indicator blue-wax-ind"></div>
+                <div>
+                  <h4 class="material-item-title">Artisan Carving Wax</h4>
+                  <p class="material-item-desc">Specially formulated hard blue wax with minimal brittleness. Holds crisp razor cuts and smooth ergonomic contours without cracking or warping under hand warmth.</p>
+                </div>
+              </div>
+
+              <div class="material-item">
+                <div class="material-indicator silver-ind"></div>
+                <div>
+                  <h4 class="material-item-title">Solid 925 Sterling Silver</h4>
+                  <p class="material-item-desc">92.5% pure elemental silver blended with 7.5% copper for superior strength, tactile weight, and brilliant reflectivity when buffed.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="materials-showcase">
+            <div class="material-image-pair">
+              <div class="pair-card">
+                <img src="assets/frames/ezgif-frame-001.jpg" alt="Uncarved blue wax cylinder ring blank" loading="lazy">
+                <div class="pair-overlay">
+                  <span class="pair-num">01</span>
+                  <span class="pair-title">Initial Blue Wax Blank</span>
+                </div>
+              </div>
+              <div class="pair-card">
+                <img src="assets/frames/ezgif-frame-168.jpg" alt="Finished polished sterling silver ring" loading="lazy">
+                <div class="pair-overlay">
+                  <span class="pair-num">02</span>
+                  <span class="pair-title">Finished Sterling Silver</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION: THE RING (SHOWCASE / DETAIL) -->
+    <section class="section section-ring" id="the-ring">
+      <div class="container">
+        <div class="section-header-centered">
+          <span class="section-badge">The Result</span>
+          <h2 class="section-title">The Finished Ring</h2>
+          <p class="section-subtitle">Every curve, wave, and highlight reflects the touch of your own sculpting.</p>
+        </div>
+
+        <div class="ring-feature-layout">
+          <div class="ring-hero-frame">
+            <img src="assets/frames/ezgif-frame-168.jpg" alt="Macro detail of the finished sterling silver ring on studio pedestal" loading="lazy" class="ring-hero-img">
+            <div class="ring-stamp-badge">
+              <span class="badge-title">SOLID 925</span>
+              <span class="badge-sub">STERLING SILVER</span>
+            </div>
+          </div>
+
+          <div class="ring-specs-grid">
+            <div class="spec-card">
+              <span class="spec-number">01</span>
+              <h4 class="spec-title">Personal Hand Geometry</h4>
+              <p class="spec-text">No two rings share the same silhouette. The organic undulating form is governed directly by your hand movements during carving.</p>
+            </div>
+
+            <div class="spec-card">
+              <span class="spec-number">02</span>
+              <h4 class="spec-title">Lost-Wax Fidelity</h4>
+              <p class="spec-text">Investment casting reproduces every sub-millimeter facet from the original wax carving into solid metal with zero dimensional distortion.</p>
+            </div>
+
+            <div class="spec-card">
+              <span class="spec-number">03</span>
+              <h4 class="spec-title">Mirror &amp; Matte Balance</h4>
+              <p class="spec-text">Polished on cotton wheels using micro-fine jeweler's rouge to produce high-contrast reflections across both flat planes and organic crests.</p>
+            </div>
+
+            <div class="spec-card">
+              <span class="spec-number">04</span>
+              <h4 class="spec-title">Substantial Tactile Weight</h4>
+              <p class="spec-text">Cast in solid sterling silver, offering comfortable daily wear with noticeable heft and permanent durability.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION: FINAL CTA -->
+    <section class="section section-cta" id="cta">
+      <div class="container">
+        <div class="cta-box">
+          <span class="section-badge cta-badge">Begin the Journey</span>
+          <h2 class="cta-heading">Create Your Ring</h2>
+          <p class="cta-subheading">Start with wax. Finish in silver.</p>
+          <p class="cta-body">
+            Receive the jeweler's carving wax and precision tools. Shape your personal band at your own pace, and send your wax form to our foundry for casting in solid sterling silver.
+          </p>
+          <div class="cta-actions">
+            <a href="#hero-track" class="btn btn-primary rewatch-btn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="1 4 1 10 7 10"></polyline>
+                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+              </svg>
+              Watch the Process Again
+            </a>
+            <button type="button" class="btn btn-secondary order-inquire-btn" id="inquire-btn">
+              Request Wax Carving Kit
+            </button>
+          </div>
+          <div class="cta-footnote" id="kit-modal-message" style="display: none;">
+            <p class="notice-text">Kit reservations are active. We provide hard blue carving wax, precision blade, ring mandrel, and pre-paid casting return flask packaging.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Minimal Quiet Footer -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-left">
+        <span class="footer-brand">BISHU</span>
+        <span class="footer-tagline">From Wax to Silver</span>
+      </div>
+
+      <nav class="footer-nav" aria-label="Footer Navigation">
+        <ul class="footer-links">
+          <li><a href="#hero-track">Animation</a></li>
+          <li><a href="#process">Process</a></li>
+          <li><a href="#materials">Materials</a></li>
+          <li><a href="#the-ring">The Ring</a></li>
+          <li><a href="#cta">Create</a></li>
+        </ul>
+      </nav>
+
+      <div class="footer-right">
+        <p class="copyright">&copy; BISHU. All rights reserved. 168 Frames Authoritative Sequence.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
