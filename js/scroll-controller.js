@@ -32,10 +32,6 @@ export class ScrollController {
 
   setReducedMotion(reduced) {
     this.isReducedMotion = reduced;
-    if (reduced) {
-      // In reduced motion mode, hero stays on still frame or manual control
-      this.renderer.setProgress(this.heroCanvas, 0);
-    }
   }
 
   init() {
@@ -79,8 +75,9 @@ export class ScrollController {
     }
 
     // === 2. BATCHED WRITES & LOGIC ===
-    // Hero Progress Calculation
-    if (this.heroTrack && this.heroCanvas && heroRect) {
+    // Hero Progress Calculation (only if hero canvas is not autoplaying)
+    const heroItem = this.heroCanvas ? this.renderer.canvases.get(this.heroCanvas) : null;
+    if (heroItem && !heroItem.autoplay && this.heroTrack && heroRect) {
       const scrollableRange = this.heroTrack.offsetHeight - innerH;
       const progress = scrollableRange > 0 ? Math.max(0, Math.min(1, -heroRect.top / scrollableRange)) : 0;
 
@@ -90,11 +87,6 @@ export class ScrollController {
         this.onHeroProgress(progress);
       }
 
-      // Stage detection:
-      // Stage 1 (Carve): 0% - 30% (frames 1 - 50)
-      // Stage 2 (Cast): 30% - 65% (frames 51 - 110)
-      // Stage 3 (Polish): 65% - 88% (frames 111 - 148)
-      // Stage 4 (Sterling Silver): 88% - 100% (frames 149 - 168)
       let stage = 1;
       if (progress >= 0.88) stage = 4;
       else if (progress >= 0.65) stage = 3;

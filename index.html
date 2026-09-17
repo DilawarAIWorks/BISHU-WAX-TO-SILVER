@@ -116,57 +116,6 @@
           </div>
         </div>
 
-        <!-- Bottom Interactive HUD (Milestone jump tabs + Timeline scrubber) -->
-        <div class="hero-overlay-bottom">
-          <div class="scrub-hud">
-            
-            <!-- Stage Milestone Tabs -->
-            <div class="stage-quick-tabs" role="tablist" aria-label="Jump to process milestone">
-              <button class="stage-tab active" data-stage="1" role="tab" aria-selected="true">
-                <span class="tab-index">01</span>
-                <span class="tab-label">Hand Sculpt</span>
-              </button>
-              <button class="stage-tab" data-stage="2" role="tab" aria-selected="false">
-                <span class="tab-index">02</span>
-                <span class="tab-label">Foundry Cast</span>
-              </button>
-              <button class="stage-tab" data-stage="3" role="tab" aria-selected="false">
-                <span class="tab-index">03</span>
-                <span class="tab-label">Surface Polish</span>
-              </button>
-              <button class="stage-tab" data-stage="4" role="tab" aria-selected="false">
-                <span class="tab-index">04</span>
-                <span class="tab-label">Sterling Silver</span>
-              </button>
-            </div>
-
-            <!-- Interactive Timeline Scrub Track -->
-            <div class="timeline-bar-container" id="timeline-container" title="Click or drag horizontally to scrub transformation">
-              <div class="timeline-track">
-                <div class="timeline-progress" id="timeline-progress"></div>
-                <div class="timeline-thumb" id="timeline-thumb"></div>
-              </div>
-              <div class="timeline-meta">
-                <span class="timeline-scroll-hint">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <polyline points="19 12 12 19 5 12"></polyline>
-                  </svg>
-                  Scroll down or drag canvas to transform
-                </span>
-                <span class="timeline-status" id="timeline-status">Transformation: 0% Complete</span>
-              </div>
-            </div>
-
-            <!-- Accessible Reduced Motion Precision Scrubber -->
-            <div class="reduced-motion-control" id="reduced-motion-control" aria-hidden="true">
-              <label for="reduced-motion-slider" class="reduced-motion-label">Process Progression:</label>
-              <input type="range" id="reduced-motion-slider" min="0" max="100" value="0" step="1" aria-label="Manual frame scrubber">
-              <span class="reduced-motion-val" id="reduced-motion-val">0% Processed</span>
-            </div>
-
-          </div>
-        </div>
 
       </div>
     </section>
@@ -210,6 +159,7 @@
     </section>
 
     <!-- FULL-BLEED NARRATIVE BANNER 1: CARVING (SCRUBS FRAMES 020-055) -->
+    <div id="process-carve"></div>
     <section class="frame-banner" id="banner-carve-section" aria-label="Carving Phase Canvas Banner">
       <canvas id="banner-canvas-carve" class="frame-banner-canvas" width="1920" height="1080" role="img" aria-label="Hand sculpting the blue wax ring form"></canvas>
       <div class="banner-scrim" aria-hidden="true"></div>

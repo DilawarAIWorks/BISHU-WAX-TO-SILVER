@@ -29,6 +29,9 @@ export class CanvasRenderer {
           item.isVisible = entry.isIntersecting;
           if (item.isVisible) {
             item.needsRedraw = true;
+            if (item.autoplay) {
+              item.lastAutoplayTime = performance.now();
+            }
             this.startLoop();
           }
         }
@@ -44,16 +47,21 @@ export class CanvasRenderer {
       if (document.hidden) {
         this.stopLoop();
       } else {
-        // Mark visible canvases for redraw and restart
+        const now = performance.now();
         for (const item of this.canvases.values()) {
-          if (item.isVisible) item.needsRedraw = true;
+          if (item.isVisible) {
+            item.needsRedraw = true;
+            if (item.autoplay) {
+              item.lastAutoplayTime = now;
+            }
+          }
         }
         this.startLoop();
       }
     });
   }
 
-  registerCanvas({ id, element, frameRange, lerp = true }) {
+  registerCanvas({ id, element, frameRange, lerp = true, autoplay = false, loop = false, fps = 28, onFrame = null }) {
     if (!element) return;
 
     const ctx = element.getContext('2d', { alpha: false, desynchronized: true });
@@ -63,6 +71,12 @@ export class CanvasRenderer {
       ctx,
       frameRange, // [start, end]
       lerp,
+      autoplay,
+      loop,
+      fps,
+      onFrame,
+      currentFrameFloat: frameRange[0],
+      lastAutoplayTime: 0,
       targetProgress: 0,
       currentProgress: 0,
       lastDrawnFrame: -1,
@@ -77,6 +91,10 @@ export class CanvasRenderer {
     this.updateCanvasDimensions(item);
     if (this.observer) {
       this.observer.observe(element);
+    }
+
+    if (autoplay) {
+      this.startLoop();
     }
 
     return item;
@@ -121,6 +139,9 @@ export class CanvasRenderer {
 
   resolveFrameIndex(item) {
     const [start, end] = item.frameRange;
+    if (item.autoplay) {
+      return Math.max(start, Math.min(end, Math.round(item.currentFrameFloat)));
+    }
     const p = item.currentProgress;
     return Math.round(start + (end - start) * p);
   }
@@ -180,27 +201,62 @@ export class CanvasRenderer {
     this.isRunning = false;
   }
 
-  renderLoop() {
+  renderLoop(timestamp) {
+    const now = typeof timestamp === 'number' ? timestamp : performance.now();
     let stillAnimating = false;
 
     for (const item of this.canvases.values()) {
       if (!item.isVisible) continue;
 
-      if (item.lerp) {
-        const diff = item.targetProgress - item.currentProgress;
-        if (Math.abs(diff) > 0.0004) {
-          item.currentProgress += diff * this.lerpFactor;
+      if (item.autoplay) {
+        if (!item.lastAutoplayTime) {
+          item.lastAutoplayTime = now;
+        }
+        let dt = (now - item.lastAutoplayTime) / 1000;
+        if (dt > 0.2) dt = 0.2; // clamp lag spike
+        item.lastAutoplayTime = now;
+
+        item.currentFrameFloat += dt * item.fps;
+        const [startFrame, endFrame] = item.frameRange;
+        const count = endFrame - startFrame + 1;
+
+        if (item.currentFrameFloat > endFrame) {
+          if (item.loop) {
+            item.currentFrameFloat = startFrame + ((item.currentFrameFloat - startFrame) % count);
+          } else {
+            item.currentFrameFloat = endFrame;
+          }
+        }
+
+        const targetFrame = Math.max(startFrame, Math.min(endFrame, Math.round(item.currentFrameFloat)));
+        if (item.needsRedraw || targetFrame !== item.lastDrawnFrame) {
+          this.drawFrame(item, targetFrame);
+          if (item.onFrame) {
+            const prog = (targetFrame - startFrame) / (endFrame - startFrame);
+            item.onFrame(targetFrame, prog);
+          }
+        }
+
+        if (item.loop || item.currentFrameFloat < endFrame) {
           stillAnimating = true;
+        }
+      } else {
+        if (item.lerp) {
+          const diff = item.targetProgress - item.currentProgress;
+          if (Math.abs(diff) > 0.0004) {
+            item.currentProgress += diff * this.lerpFactor;
+            stillAnimating = true;
+          } else {
+            item.currentProgress = item.targetProgress;
+          }
         } else {
           item.currentProgress = item.targetProgress;
         }
-      } else {
-        item.currentProgress = item.targetProgress;
-      }
 
-      const targetFrame = this.resolveFrameIndex(item);
-      if (item.needsRedraw || targetFrame !== item.lastDrawnFrame) {
-        this.drawFrame(item, targetFrame);
+        const targetFrame = this.resolveFrameIndex(item);
+        if (item.needsRedraw || targetFrame !== item.lastDrawnFrame) {
+          this.drawFrame(item, targetFrame);
+        }
       }
     }
 

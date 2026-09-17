@@ -17,14 +17,31 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 2. Initialize Canvas Renderer
   const renderer = new CanvasRenderer(frameLoader);
 
-  // Register Hero Canvas
+  // 3. Initialize UI & Scroll Controllers
+  let uiController;
+  let scrollController;
+
+  // Register Hero Canvas with auto-loading continuous loop
   const heroCanvas = document.getElementById('hero-canvas');
   if (heroCanvas) {
     renderer.registerCanvas({
       id: 'hero',
       element: heroCanvas,
       frameRange: [1, TOTAL_FRAMES],
-      lerp: true
+      autoplay: true,
+      loop: true,
+      fps: 28,
+      lerp: false,
+      onFrame: (frameIndex) => {
+        let stage = 1;
+        if (frameIndex >= 149) stage = 4;
+        else if (frameIndex >= 111) stage = 3;
+        else if (frameIndex >= 51) stage = 2;
+
+        if (uiController) {
+          uiController.updateStage(stage);
+        }
+      }
     });
   }
 
@@ -59,15 +76,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // 3. Initialize UI Controller
-  let uiController;
-  let scrollController;
-
   scrollController = new ScrollController({
     renderer,
-    onHeroProgress: (progress) => {
-      if (uiController) uiController.updateHUD(progress);
-    },
     onStageChange: (stage) => {
       if (uiController) uiController.updateStage(stage);
     }
@@ -99,7 +109,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const item = renderer.canvases.get(heroCanvas);
         return item ? renderer.resolveFrameIndex(item) : 1;
       },
-      get currentStage() { return scrollController.currentStageIndex; }
+      get currentStage() {
+        return (uiController && uiController.currentStage) ? uiController.currentStage : 1;
+      },
+      get isLooping() { return true; }
     },
     frameLoader,
     renderer,

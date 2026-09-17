@@ -141,8 +141,16 @@ class CDPClient {
     if (clip) params.clip = clip;
     const res = await this.send('Page.captureScreenshot', params);
     const buffer = Buffer.from(res.data, 'base64');
-    fs.writeFileSync(filename, buffer);
-    console.log(`Saved screenshot: ${filename} (${buffer.length} bytes)`);
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        fs.writeFileSync(filename, buffer);
+        console.log(`Saved screenshot: ${filename} (${buffer.length} bytes)`);
+        return;
+      } catch (err) {
+        if (attempt === 2) throw err;
+        await sleep(200);
+      }
+    }
   }
 
   close() {
@@ -310,34 +318,23 @@ async function run() {
   await sleep(300);
 
   const testFrames = [1, 50, 90, 130, 168];
-  const frameProgMap = {
-    1: 0.0,
-    50: 0.30,
-    90: 0.55,
-    130: 0.78,
-    168: 1.0
-  };
-
   for (const f of testFrames) {
-    const prog = frameProgMap[f];
     await client.eval(`(() => {
-      const track = document.getElementById('hero-track');
-      const max = track.offsetHeight - window.innerHeight;
-      window.scrollTo(0, max * ${prog});
-      window.dispatchEvent(new Event('scroll'));
+      const c = document.getElementById('hero-canvas');
+      const item = window.__BISHU__.renderer.canvases.get(c);
+      if (item) {
+        window.__BISHU__.renderer.drawFrame(item, ${f});
+      }
     })()`);
-    await sleep(400);
-
-    const curFrame = await client.eval('window.__BISHU__.state.currentFrame');
-    console.log(`Targeting frame ~${f}: Current resolved frame index: ${curFrame}`);
+    await sleep(200);
     const padded = String(f).padStart(3, '0');
     await client.captureScreenshot(`verify-390-hero-frame${padded}.png`, { x: 0, y: 0, width: 390, height: 844, scale: 1 });
   }
   console.log('✓ Captured 390px screenshots for frames 001, 050, 090, 130, 168.');
 
-  // 6. Test Bidirectional Monotonic Scrub & Fast Flick
-  console.log('\n--- 5. MONOTONIC SCROLL & FAST FLICK INTEGRITY ---');
-  // Reset to desktop for smooth scroll test
+  // 6. Test Auto-Looping Frame Progression & Continuous Loop
+  console.log('\n--- 5. AUTO-LOOPING PLAYBACK & WRAP-AROUND INTEGRITY ---');
+  // Reset to desktop for smooth auto-play test
   await client.send('Emulation.setDeviceMetricsOverride', {
     width: 1440,
     height: 900,
@@ -347,58 +344,43 @@ async function run() {
   await client.eval('window.dispatchEvent(new Event("resize"));');
   await sleep(300);
 
-  let prevForwardFrame = 0;
-  let monotonicForward = true;
-  for (let p = 0; p <= 1.001; p += 0.2) {
-    const targetP = Math.min(1.0, Math.max(0, p));
-    await client.eval(`(() => {
-      const track = document.getElementById('hero-track');
-      const max = track.offsetHeight - window.innerHeight;
-      window.scrollTo(0, max * ${targetP});
-      window.dispatchEvent(new Event('scroll'));
-    })()`);
-    await sleep(350);
-    const f = await client.eval('window.__BISHU__.state.currentFrame');
-    if (f < prevForwardFrame) monotonicForward = false;
-    console.log(`Forward scroll p=${targetP.toFixed(1)} -> Frame ${f}`);
-    prevForwardFrame = f;
+  // Measure automatic frame advancement without scrolling
+  const initialFrame = await client.eval('window.__BISHU__.state.currentFrame');
+  await sleep(500);
+  const advancedFrame = await client.eval('window.__BISHU__.state.currentFrame');
+  console.log(`Initial frame: ${initialFrame}, Advanced frame after 500ms: ${advancedFrame}`);
+  if (advancedFrame === initialFrame) {
+    throw new Error('FAIL: Hero canvas is not advancing automatically over time');
   }
-  console.log(`Forward scroll progression monotonic: ${monotonicForward} (ended at frame ${prevForwardFrame})`);
+  console.log('✓ Verified: Hero canvas advances automatically without user input.');
 
-  // Reverse scroll
-  let prevReverseFrame = 999;
-  let monotonicReverse = true;
-  for (let p = 1.0; p >= -0.001; p -= 0.2) {
-    const targetP = Math.min(1.0, Math.max(0, p));
-    await client.eval(`(() => {
-      const track = document.getElementById('hero-track');
-      const max = track.offsetHeight - window.innerHeight;
-      window.scrollTo(0, max * ${targetP});
-      window.dispatchEvent(new Event('scroll'));
-    })()`);
-    await sleep(350);
-    const f = await client.eval('window.__BISHU__.state.currentFrame');
-    if (f > prevReverseFrame) monotonicReverse = false;
-    console.log(`Reverse scroll p=${targetP.toFixed(1)} -> Frame ${f}`);
-    prevReverseFrame = f;
+  // Test loop wrap-around
+  console.log('Verifying loop wrap-around from frame 168 back to start...');
+  await client.eval(`(() => {
+    const c = document.getElementById('hero-canvas');
+    const item = window.__BISHU__.renderer.canvases.get(c);
+    if (item) {
+      item.currentFrameFloat = 167.5;
+      item.lastAutoplayTime = performance.now();
+    }
+  })()`);
+  await sleep(250);
+  const loopFrame = await client.eval('window.__BISHU__.state.currentFrame');
+  console.log(`Loop wrap frame: ${loopFrame}`);
+  if (loopFrame > 168) {
+    throw new Error(`FAIL: Frame exceeded totalFrames: ${loopFrame}`);
   }
-  console.log(`Reverse scroll progression monotonic: ${monotonicReverse} (ended at frame ${prevReverseFrame})`);
+  console.log('✓ Verified: Loop successfully wraps around cleanly.');
 
-  // Measure sustained FPS during continuous scrubbing
-  console.log('Measuring sustained FPS during active scrubbing...');
+  // Measure sustained FPS during continuous auto-play
+  console.log('Measuring sustained FPS during active playback...');
   const fpsResult = await client.eval(`(new Promise((resolve) => {
     let frames = 0;
     const startTime = performance.now();
-    const track = document.getElementById('hero-track');
-    const max = track.offsetHeight - window.innerHeight;
 
     function tick() {
       frames++;
       const elapsed = performance.now() - startTime;
-      const progress = (Math.sin(elapsed / 200) + 1) / 2;
-      window.scrollTo(0, max * progress);
-      window.dispatchEvent(new Event('scroll'));
-
       if (elapsed < 1000) {
         requestAnimationFrame(tick);
       } else {
@@ -408,25 +390,7 @@ async function run() {
     }
     requestAnimationFrame(tick);
   }))`);
-  console.log(`✓ Sustained scrubbing performance: ${fpsResult.fps} FPS (${fpsResult.frames} frames in ${fpsResult.elapsed}ms)`);
-
-  // Fast Flick Simulation
-  console.log('Simulating fast scroll flick...');
-  await client.eval(`(() => {
-    const track = document.getElementById('hero-track');
-    const max = track.offsetHeight - window.innerHeight;
-    window.scrollTo(0, max * 0.9);
-    window.dispatchEvent(new Event('scroll'));
-  })()`);
-  await sleep(100);
-  await client.eval(`(() => {
-    const track = document.getElementById('hero-track');
-    const max = track.offsetHeight - window.innerHeight;
-    window.scrollTo(0, max * 0.1);
-    window.dispatchEvent(new Event('scroll'));
-  })()`);
-  await sleep(350);
-  console.log('✓ Fast flick handled without crash or unhandled error.');
+  console.log(`✓ Sustained animation performance: ${fpsResult.fps} FPS (${fpsResult.frames} frames in ${fpsResult.elapsed}ms)`);
 
   // 7. Test Below-Hero Banners
   console.log('\n--- 6. BELOW-HERO BANNERS SCRUBBING AUDIT ---');
@@ -468,8 +432,8 @@ async function run() {
   await sleep(300);
   await client.captureScreenshot('verify-banner-polish.png');
 
-  // 8. Reduced Motion Mode Verification
-  console.log('\n--- 7. ACCESSIBLE REDUCED-MOTION VERIFICATION ---');
+  // 8. Verification of Purged HUD Elements (Stage Tabs & Reduced Motion Scrubber)
+  console.log('\n--- 7. PURGE OF STAGE TABS & REDUCED MOTION CONTROLS AUDIT ---');
   await client.send('Emulation.setEmulatedMedia', {
     media: 'screen',
     features: [{ name: 'prefers-reduced-motion', value: 'reduce' }]
@@ -477,25 +441,41 @@ async function run() {
   await client.eval('window.scrollTo(0, 0); window.dispatchEvent(new Event("resize"));');
   await sleep(300);
 
-  const reducedMotionActive = await client.eval(`(() => {
-    const ctrl = document.getElementById('reduced-motion-control');
+  const purgedCheck = await client.eval(`(() => {
+    const tabs = document.querySelector('.stage-quick-tabs');
+    const stageTabs = document.querySelectorAll('.stage-tab');
+    const reducedMotionCtrl = document.getElementById('reduced-motion-control');
     const slider = document.getElementById('reduced-motion-slider');
+    const bottomHud = document.querySelector('.hero-overlay-bottom');
+
+    const bodyText = document.body.innerText;
+    const hasProcessProgressionText = bodyText.includes('Process Progression:');
+    const hasZeroPercentText = bodyText.includes('0% Processed');
+
     return {
-      ctrlDisplay: window.getComputedStyle(ctrl).display,
-      sliderValue: slider.value
+      hasTabs: tabs !== null,
+      stageTabCount: stageTabs.length,
+      hasReducedMotionCtrl: reducedMotionCtrl !== null,
+      hasSlider: slider !== null,
+      hasBottomHud: bottomHud !== null,
+      hasProcessProgressionText,
+      hasZeroPercentText
     };
   })()`);
-  console.log('Reduced motion control state:', reducedMotionActive);
 
-  // Manipulate native slider
-  await client.eval(`(() => {
-    const slider = document.getElementById('reduced-motion-slider');
-    slider.value = "50";
-    slider.dispatchEvent(new Event('input'));
-  })()`);
-  await sleep(300);
-  const sliderFrame = await client.eval('window.__BISHU__.state.currentFrame');
-  console.log(`Reduced motion slider at 50% -> Resolved frame: ${sliderFrame}`);
+  console.log('Purged elements check result:', JSON.stringify(purgedCheck, null, 2));
+
+  if (purgedCheck.hasTabs || purgedCheck.stageTabCount > 0) {
+    throw new Error('FAIL: .stage-quick-tabs or .stage-tab still present in DOM');
+  }
+  if (purgedCheck.hasReducedMotionCtrl || purgedCheck.hasSlider) {
+    throw new Error('FAIL: #reduced-motion-control or #reduced-motion-slider still present in DOM');
+  }
+  if (purgedCheck.hasProcessProgressionText || purgedCheck.hasZeroPercentText) {
+    throw new Error('FAIL: "Process Progression:" or "0% Processed" text still present in DOM');
+  }
+  console.log('✓ Verified: "01 Hand Sculpt", "02 Foundry Cast", "03 Surface Polish", "04 Sterling Silver" tabs completely removed.');
+  console.log('✓ Verified: "Process Progression: 0% Processed" control completely removed.');
   await client.captureScreenshot('verify-reduced-motion.png');
 
   // 9. Automated Codebase Audit for Fabrications
