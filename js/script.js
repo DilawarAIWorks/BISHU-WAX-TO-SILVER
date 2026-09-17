@@ -1,23 +1,28 @@
 /**
  * BISHU — WAX TO SILVER
- * Pure Vanilla JavaScript Animation & Scroll Engine
+ * Production-Grade Pure Vanilla JavaScript Interactive Engine
  * 
+ * Zero frameworks, zero external animation libraries.
  * Features:
- * - HTML5 Canvas rendering for 168 frames sequence
+ * - HTML5 Canvas rendering for 168 high-definition frame sequence
  * - DevicePixelRatio / Retina support with zero distortion
- * - Object-fit contain scaling (preserves exact 16:9 frame ratio)
- * - Scroll-coupled bidirectional playback (0% to 100% -> 100% to 0%)
- * - RequestAnimationFrame render throttle (only renders when frame changes)
- * - Intelligent progressive frame preloader with visual feedback
- * - Interactive timeline scrubbing and stage jump navigation
- * - Accessibility & prefers-reduced-motion fallback
+ * - Object-fit contain scaling (preserves exact 16:9 native ratio)
+ * - Bidirectional scroll-coupled playback (0% to 100% and reverse)
+ * - Direct mouse drag and touch swipe scrubbing on the canvas viewport
+ * - Progressive frame preloader with visual loading bar
+ * - Stage milestone quick-jump navigation
+ * - Interactive bespoke ring configurator (silhouette, width, finish, size)
+ * - Interactive ring anatomy inspection hotspots & synchronized spec cards
+ * - Accessible FAQ accordion
+ * - Slide-out atelier order drawer with form submission handling
+ * - Accessible fallback for prefers-reduced-motion
  */
 
 (function () {
   'use strict';
 
   // =========================================================================
-  // CONFIGURATION & STATE
+  // CONFIGURATION & ATELIER STAGES
   // =========================================================================
   const CONFIG = {
     totalFrames: 168,
@@ -25,20 +30,21 @@
     frameExtension: '.jpg',
     nativeWidth: 1920,
     nativeHeight: 1080,
-    // Stage boundary frame ranges (1-indexed)
     stages: [
       {
         id: 1,
-        name: '01 / CARVE',
-        title: 'Hand Carving',
-        desc: "High-density blue jeweler's wax shaped with blade and file to your personal ergonomics.",
+        code: '01 · HAND SCULPT',
+        chapter: 'CHAPTER 01',
+        title: 'Hand Sculpting',
+        desc: "High-density blue jeweler's wax shaped with precision blade and file to your personal finger geometry.",
         startFrame: 1,
         endFrame: 54,
         keyFrame: 25
       },
       {
         id: 2,
-        name: '02 / CAST',
+        code: '02 · FOUNDRY CAST',
+        chapter: 'CHAPTER 02',
         title: 'Lost-Wax Casting',
         desc: 'Molten sterling silver fills the investment flask, vaporizing and replacing the wax master.',
         startFrame: 55,
@@ -47,8 +53,9 @@
       },
       {
         id: 3,
-        name: '03 / REFINE',
-        title: 'Refine & Buff',
+        code: '03 · SURFACE POLISH',
+        chapter: 'CHAPTER 03',
+        title: 'Surface Polishing',
         desc: 'Raw casting skin refined with rotary burs and cotton wheels for a mirror finish.',
         startFrame: 101,
         endFrame: 146,
@@ -56,8 +63,9 @@
       },
       {
         id: 4,
-        name: '04 / SILVER',
-        title: 'Sterling Silver',
+        code: '04 · STERLING SILVER',
+        chapter: 'CHAPTER 04',
+        title: 'Solid Sterling Silver',
         desc: 'Solid 925 sterling silver ring. Permanent, personal, and sculpted by your own hands.',
         startFrame: 147,
         endFrame: 168,
@@ -75,37 +83,82 @@
     targetFrame: 1,
     lastRenderedFrame: -1,
     scrollProgress: 0,
-    isScrubbing: false,
+    isScrubbingTimeline: false,
+    isDraggingCanvas: false,
     activeStageId: 1,
-    reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    // Customizer state
+    customizer: {
+      silhouette: 'Organic Wave',
+      width: '6mm',
+      finish: 'Mirror Polish',
+      size: 9.0,
+      baseWeight: 12.8
+    }
   };
 
   // DOM Elements
   const DOM = {
+    // Header & Navigation
     header: document.getElementById('site-header'),
     headerStagePill: document.getElementById('header-stage-pill'),
+    navLinks: document.querySelectorAll('.site-nav .nav-link'),
+    sections: document.querySelectorAll('main > section[id]'),
+
+    // Hero Canvas & Track
     heroTrack: document.getElementById('hero-track'),
-    canvas: document.getElementById('hero-canvas'),
     canvasStage: document.getElementById('canvas-stage'),
+    canvas: document.getElementById('hero-canvas'),
+    dragHint: document.getElementById('drag-hint-badge'),
     loader: document.getElementById('canvas-loader'),
     loaderBar: document.getElementById('loader-bar'),
-    loaderStatus: document.getElementById('loader-status'),
-    heroOverlayTop: document.querySelector('.hero-overlay-top'),
+    heroOverlayTop: document.getElementById('hero-overlay-top'),
+
+    // Floating Stage Card
     stageCard: document.getElementById('hero-stage-card'),
     stageCardNumber: document.getElementById('stage-card-number'),
     stageCardTitle: document.getElementById('stage-card-title'),
     stageCardDesc: document.getElementById('stage-card-desc'),
+
+    // Interactive HUD
+    stageTabs: document.querySelectorAll('.stage-tab'),
     timelineContainer: document.getElementById('timeline-container'),
     timelineProgress: document.getElementById('timeline-progress'),
     timelineThumb: document.getElementById('timeline-thumb'),
-    frameCounter: document.getElementById('frame-counter'),
-    stageTabs: document.querySelectorAll('.stage-tab'),
-    jumpButtons: document.querySelectorAll('.jump-to-stage-btn'),
+    timelineStatus: document.getElementById('timeline-status'),
     reducedMotionControl: document.getElementById('reduced-motion-control'),
     reducedMotionSlider: document.getElementById('reduced-motion-slider'),
     reducedMotionVal: document.getElementById('reduced-motion-val'),
-    inquireBtn: document.getElementById('inquire-btn'),
-    kitModalMessage: document.getElementById('kit-modal-message')
+
+    // Action Links & Buttons
+    jumpButtons: document.querySelectorAll('.jump-to-stage-btn'),
+    rewatchBtn: document.querySelector('.rewatch-btn'),
+
+    // Ring Customizer
+    configButtons: document.querySelectorAll('.config-btn'),
+    sizeSlider: document.getElementById('size-slider'),
+    sizeDisplay: document.getElementById('size-display'),
+    summaryTitle: document.getElementById('summary-title'),
+    summaryDesc: document.getElementById('summary-desc'),
+    summaryWeight: document.getElementById('summary-weight'),
+
+    // Ring Anatomy Hotspots
+    hotspots: document.querySelectorAll('.ring-hotspot'),
+    specCards: document.querySelectorAll('.spec-card'),
+
+    // FAQ Accordion
+    faqItems: document.querySelectorAll('.faq-item'),
+
+    // Slide-out Order Drawer
+    openDrawerBtns: document.querySelectorAll('#open-drawer-btn, .open-order-drawer'),
+    drawerCloseBtn: document.getElementById('drawer-close-btn'),
+    orderDrawer: document.getElementById('order-drawer'),
+    drawerBackdrop: document.getElementById('drawer-backdrop'),
+    orderForm: document.getElementById('order-form'),
+    orderSuccess: document.getElementById('order-success'),
+    closeSuccessBtn: document.getElementById('close-success-btn'),
+    orderSizeSelect: document.getElementById('order-size'),
+    orderFinishSelect: document.getElementById('order-finish')
   };
 
   const ctx = DOM.canvas ? DOM.canvas.getContext('2d', { alpha: false }) : null;
@@ -132,7 +185,6 @@
       loadRemainingFrames();
     };
     firstImg.onerror = () => {
-      console.warn('Failed to load initial frame 1');
       loadRemainingFrames();
     };
   }
@@ -172,9 +224,6 @@
     if (DOM.loaderBar) {
       DOM.loaderBar.style.width = `${percent}%`;
     }
-    if (DOM.loaderStatus) {
-      DOM.loaderStatus.textContent = `Loading sequence ${percent}%`;
-    }
   }
 
   function onAllFramesLoaded() {
@@ -183,14 +232,14 @@
       DOM.loader.classList.add('loaded');
       setTimeout(() => {
         DOM.loader.style.display = 'none';
-      }, 700);
+      }, 600);
     }
-    // Re-render current frame with high-quality source
+    // Re-render current frame with authoritative source
     renderFrame(state.currentFrame);
   }
 
   // =========================================================================
-  // 2. CANVAS SIZING & RENDERING
+  // 2. CANVAS SIZING & CONTAIN-SCALING RENDERING
   // =========================================================================
   function resizeCanvas() {
     if (!DOM.canvas || !DOM.canvasStage) return;
@@ -207,41 +256,39 @@
   }
 
   /**
-   * Renders the given frame onto the canvas using contain-scaling
-   * guarantees zero distortion, zero stretching, and zero clipping of the ring.
+   * Contain-scaling: guarantees zero distortion, zero stretching, zero clipping.
    */
   function renderFrame(frameIndex) {
     if (!ctx || !DOM.canvas) return;
 
-    const img = state.images[frameIndex];
-    // If target frame is not yet loaded, find the closest available frame
-    let renderableImg = img;
-    if (!renderableImg || !renderableImg.complete) {
+    let img = state.images[frameIndex];
+    if (!img || !img.complete) {
+      // Find nearest loaded frame
       for (let offset = 1; offset < CONFIG.totalFrames; offset++) {
         const prev = state.images[frameIndex - offset];
-        if (prev && prev.complete) { renderableImg = prev; break; }
+        if (prev && prev.complete) { img = prev; break; }
         const next = state.images[frameIndex + offset];
-        if (next && next.complete) { renderableImg = next; break; }
+        if (next && next.complete) { img = next; break; }
       }
     }
 
-    if (!renderableImg || !renderableImg.complete) return;
+    if (!img || !img.complete) return;
 
     const cw = DOM.canvas.width;
     const ch = DOM.canvas.height;
-    const imgW = renderableImg.naturalWidth || CONFIG.nativeWidth;
-    const imgH = renderableImg.naturalHeight || CONFIG.nativeHeight;
+    const imgW = img.naturalWidth || CONFIG.nativeWidth;
+    const imgH = img.naturalHeight || CONFIG.nativeHeight;
 
     const canvasAspect = cw / ch;
     const imgAspect = imgW / imgH;
 
     let drawW, drawH;
     if (canvasAspect > imgAspect) {
-      // Canvas is wider than 16:9
+      // Canvas wider than 16:9
       drawH = ch;
       drawW = drawH * imgAspect;
     } else {
-      // Canvas is taller than 16:9 (e.g. mobile portrait)
+      // Canvas taller than 16:9 (e.g. mobile portrait)
       drawW = cw;
       drawH = drawW / imgAspect;
     }
@@ -249,12 +296,12 @@
     const dx = Math.round((cw - drawW) / 2);
     const dy = Math.round((ch - drawH) / 2);
 
-    // Clean neutral studio background fill to eliminate gaps seamlessly
+    // Clear background to neutral studio tone
     ctx.fillStyle = '#eae8e2';
     ctx.fillRect(0, 0, cw, ch);
 
-    // Draw the authoritative image frame
-    ctx.drawImage(renderableImg, dx, dy, drawW, drawH);
+    // Render frame
+    ctx.drawImage(img, dx, dy, drawW, drawH);
 
     state.lastRenderedFrame = frameIndex;
   }
@@ -271,29 +318,26 @@
     if (scrollRange <= 0) return 0;
 
     const scrolled = -rect.top;
-    const progress = Math.min(Math.max(scrolled / scrollRange, 0), 1);
-    return progress;
+    return Math.min(Math.max(scrolled / scrollRange, 0), 1);
   }
 
   function updateScroll() {
     const progress = getScrollProgress();
     state.scrollProgress = progress;
 
-    // Map normalized progress (0 to 1) to frame index (1 to 168)
-    const targetFrame = Math.min(
+    // Map progress to frame index (1 to 168)
+    const target = Math.min(
       CONFIG.totalFrames,
       Math.max(1, Math.round(progress * (CONFIG.totalFrames - 1)) + 1)
     );
 
-    state.targetFrame = targetFrame;
+    state.targetFrame = target;
   }
 
-  // Main Animation / RAF Loop
+  // RAF Animation Loop
   function tick() {
-    // Smooth interpolation between current and target frame
     if (state.currentFrame !== state.targetFrame) {
       const diff = state.targetFrame - state.currentFrame;
-      // Step fast enough for crisp responsiveness without frame lag
       const step = Math.sign(diff) * Math.max(1, Math.min(Math.abs(diff), Math.ceil(Math.abs(diff) * 0.4)));
       state.currentFrame += step;
 
@@ -305,7 +349,7 @@
   }
 
   // =========================================================================
-  // 4. DYNAMIC HUD & NARRATIVE UPDATES
+  // 4. CUSTOMER-FACING HUD UPDATES (ZERO FRAME NUMBERS)
   // =========================================================================
   function getStageForFrame(frame) {
     for (const stage of CONFIG.stages) {
@@ -317,14 +361,14 @@
   }
 
   function updateHUD(frame, progress) {
-    // 1. Update Frame Counter
-    if (DOM.frameCounter) {
-      const padded = String(frame).padStart(3, '0');
-      DOM.frameCounter.textContent = `FRAME ${padded} / ${CONFIG.totalFrames}`;
+    const pct = Math.round(((frame - 1) / (CONFIG.totalFrames - 1)) * 100);
+
+    // 1. Customer-Facing Transformation Status
+    if (DOM.timelineStatus) {
+      DOM.timelineStatus.textContent = `Transformation: ${pct}% Complete`;
     }
 
-    // 2. Update Timeline Track
-    const pct = ((frame - 1) / (CONFIG.totalFrames - 1)) * 100;
+    // 2. Timeline Progress Bar
     if (DOM.timelineProgress) {
       DOM.timelineProgress.style.width = `${pct}%`;
     }
@@ -332,23 +376,20 @@
       DOM.timelineThumb.style.left = `${pct}%`;
     }
 
-    // 3. Stage Info
+    // 3. Stage Information Card & Header Pill
     const stage = getStageForFrame(frame);
     if (stage.id !== state.activeStageId) {
       state.activeStageId = stage.id;
 
-      // Update Header Pill
       if (DOM.headerStagePill) {
         const textSpan = DOM.headerStagePill.querySelector('.stage-text');
-        if (textSpan) textSpan.textContent = stage.name;
+        if (textSpan) textSpan.textContent = stage.code;
       }
 
-      // Update Floating Stage Card
-      if (DOM.stageCardNumber) DOM.stageCardNumber.textContent = `0${stage.id}`;
+      if (DOM.stageCardNumber) DOM.stageCardNumber.textContent = stage.chapter;
       if (DOM.stageCardTitle) DOM.stageCardTitle.textContent = stage.title;
       if (DOM.stageCardDesc) DOM.stageCardDesc.textContent = stage.desc;
 
-      // Update Bottom Stage Tabs
       DOM.stageTabs.forEach(tab => {
         const tabStage = parseInt(tab.getAttribute('data-stage'), 10);
         if (tabStage === stage.id) {
@@ -361,7 +402,7 @@
       });
     }
 
-    // 4. Fade Top Editorial Text as scroll deepens
+    // 4. Hero Overlay Editorial Fade
     if (DOM.heroOverlayTop) {
       if (progress > 0.04) {
         const fade = Math.max(0, 1 - (progress - 0.04) * 6);
@@ -373,18 +414,93 @@
       }
     }
 
-    // 5. Sync Reduced Motion Control if present
+    // 5. Sync Accessible Slider
     if (DOM.reducedMotionSlider) {
-      DOM.reducedMotionSlider.value = frame;
+      DOM.reducedMotionSlider.value = pct;
     }
     if (DOM.reducedMotionVal) {
-      const padded = String(frame).padStart(3, '0');
-      DOM.reducedMotionVal.textContent = `Frame ${padded} / ${CONFIG.totalFrames}`;
+      DOM.reducedMotionVal.textContent = `${pct}% Processed`;
     }
   }
 
   // =========================================================================
-  // 5. INTERACTIVE TIMELINE SCRUBBING
+  // 5. DIRECT CANVAS DRAG & TOUCH SWIPE SCRUBBING
+  // =========================================================================
+  function setupCanvasDirectDrag() {
+    if (!DOM.canvasStage || !DOM.heroTrack) return;
+
+    let isPointerDown = false;
+    let startX = 0;
+    let startScrollY = 0;
+    let dragDistance = 0;
+
+    DOM.canvasStage.style.cursor = 'grab';
+
+    function onPointerDown(e) {
+      if (e.button !== 0 && e.pointerType === 'mouse') return; // Left button only for mouse
+      isPointerDown = true;
+      startX = e.clientX;
+      startScrollY = window.scrollY;
+      dragDistance = 0;
+
+      DOM.canvasStage.style.cursor = 'grabbing';
+      if (DOM.canvasStage.setPointerCapture) {
+        try {
+          DOM.canvasStage.setPointerCapture(e.pointerId);
+        } catch (err) {
+          // Fallback if pointer capture is not supported
+        }
+      }
+
+      // Hide drag hint badge permanently after first direct drag
+      if (DOM.dragHint) {
+        DOM.dragHint.style.opacity = '0';
+        DOM.dragHint.style.transition = 'opacity 0.4s ease';
+      }
+    }
+
+    function onPointerMove(e) {
+      if (!isPointerDown) return;
+
+      const deltaX = e.clientX - startX;
+      dragDistance += Math.abs(deltaX);
+
+      // Sensitivity: scrubbing 400px horizontally navigates ~40% of the sequence
+      const scrollRange = DOM.heroTrack.offsetHeight - window.innerHeight;
+      const trackTop = DOM.heroTrack.offsetTop;
+      const sensitivity = (scrollRange / 700);
+
+      // Dragging right advances, dragging left rewinds
+      const targetScrollY = Math.max(
+        trackTop,
+        Math.min(trackTop + scrollRange, startScrollY + deltaX * sensitivity)
+      );
+
+      window.scrollTo(0, targetScrollY);
+    }
+
+    function onPointerUp(e) {
+      if (!isPointerDown) return;
+      isPointerDown = false;
+      DOM.canvasStage.style.cursor = 'grab';
+
+      if (DOM.canvasStage.releasePointerCapture) {
+        try {
+          DOM.canvasStage.releasePointerCapture(e.pointerId);
+        } catch (err) {
+          // Ignore
+        }
+      }
+    }
+
+    DOM.canvasStage.addEventListener('pointerdown', onPointerDown);
+    DOM.canvasStage.addEventListener('pointermove', onPointerMove);
+    DOM.canvasStage.addEventListener('pointerup', onPointerUp);
+    DOM.canvasStage.addEventListener('pointercancel', onPointerUp);
+  }
+
+  // =========================================================================
+  // 6. TIMELINE SCRUBBING & STAGE NAVIGATION
   // =========================================================================
   function handleTimelineScrub(e) {
     if (!DOM.timelineContainer || !DOM.heroTrack) return;
@@ -408,18 +524,17 @@
 
     DOM.timelineContainer.addEventListener('click', handleTimelineScrub);
 
-    // Draggable scrubbing support
     DOM.timelineContainer.addEventListener('mousedown', (e) => {
-      state.isScrubbing = true;
+      state.isScrubbingTimeline = true;
       handleTimelineScrub(e);
 
       const onMouseMove = (moveEvent) => {
-        if (!state.isScrubbing) return;
+        if (!state.isScrubbingTimeline) return;
         handleTimelineScrub(moveEvent);
       };
 
       const onMouseUp = () => {
-        state.isScrubbing = false;
+        state.isScrubbingTimeline = false;
         window.removeEventListener('mousemove', onMouseMove);
         window.removeEventListener('mouseup', onMouseUp);
       };
@@ -429,9 +544,6 @@
     });
   }
 
-  // =========================================================================
-  // 6. STAGE TABS & JUMP BUTTONS
-  // =========================================================================
   function scrollToFrame(frameNumber) {
     if (!DOM.heroTrack) return;
 
@@ -458,32 +570,258 @@
       });
     });
 
-    // Jump Buttons inside Process Cards
+    // Jump to Stage buttons in Process Cards
     DOM.jumpButtons.forEach(btn => {
       btn.addEventListener('click', () => {
-        const targetFrame = parseInt(btn.getAttribute('data-target-frame'), 10);
-        if (!isNaN(targetFrame)) {
-          scrollToFrame(targetFrame);
+        const stageNum = parseInt(btn.getAttribute('data-target-stage'), 10);
+        const frameNum = parseInt(btn.getAttribute('data-target-frame'), 10);
+
+        if (!isNaN(stageNum)) {
+          const stage = CONFIG.stages.find(s => s.id === stageNum);
+          if (stage) scrollToFrame(stage.keyFrame);
+        } else if (!isNaN(frameNum)) {
+          scrollToFrame(frameNum);
         }
       });
     });
 
-    // Inquire CTA Button
-    if (DOM.inquireBtn && DOM.kitModalMessage) {
-      DOM.inquireBtn.addEventListener('click', () => {
-        const isHidden = DOM.kitModalMessage.style.display === 'none';
-        DOM.kitModalMessage.style.display = isHidden ? 'inline-block' : 'none';
-        if (isHidden) {
-          DOM.inquireBtn.textContent = 'Kit Reservation Details Below';
-        } else {
-          DOM.inquireBtn.textContent = 'Request Wax Carving Kit';
-        }
+    // Rewatch Transformation Button
+    if (DOM.rewatchBtn) {
+      DOM.rewatchBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        scrollToFrame(1);
       });
     }
   }
 
   // =========================================================================
-  // 7. HEADER SCROLL STATE & ACTIVE NAV
+  // 7. BESPOKE RING CONFIGURATOR / CUSTOMIZER
+  // =========================================================================
+  function setupCustomizer() {
+    // Configurator Buttons (Silhouette, Width, Finish)
+    DOM.configButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const param = btn.getAttribute('data-param');
+        const value = btn.getAttribute('data-value');
+
+        // Deactivate siblings in this group
+        const parentGroup = btn.closest('.config-options');
+        if (parentGroup) {
+          parentGroup.querySelectorAll('.config-btn').forEach(b => b.classList.remove('active'));
+        }
+        btn.classList.add('active');
+
+        if (param === 'silhouette') state.customizer.silhouette = value;
+        if (param === 'width') {
+          state.customizer.width = value;
+          const weightStr = btn.getAttribute('data-weight');
+          if (weightStr) {
+            state.customizer.baseWeight = parseFloat(weightStr);
+          }
+        }
+        if (param === 'finish') state.customizer.finish = value;
+
+        updateCustomizerPreview();
+      });
+    });
+
+    // Size Slider
+    if (DOM.sizeSlider) {
+      DOM.sizeSlider.addEventListener('input', (e) => {
+        const sizeVal = parseFloat(e.target.value);
+        state.customizer.size = sizeVal;
+        updateCustomizerPreview();
+      });
+    }
+
+    updateCustomizerPreview();
+  }
+
+  function updateCustomizerPreview() {
+    const { silhouette, width, finish, size, baseWeight } = state.customizer;
+
+    // Calculate approximate inner diameter
+    const diameter = (11.63 + size * 0.82).toFixed(1);
+
+    if (DOM.sizeDisplay) {
+      DOM.sizeDisplay.textContent = `US Size ${size.toFixed(1)} (${diameter}mm diameter)`;
+    }
+
+    // Dynamic weight calculation based on width base weight and ring diameter scaling
+    const scaledWeight = (baseWeight * (size / 9.0)).toFixed(1);
+
+    if (DOM.summaryTitle) {
+      DOM.summaryTitle.textContent = `Bespoke ${width} ${silhouette} Ring`;
+    }
+
+    if (DOM.summaryDesc) {
+      DOM.summaryDesc.textContent = `Sculpted by your hand in blue carving wax, lost-wax cast in solid sterling silver with ${finish.toLowerCase()} finish.`;
+    }
+
+    if (DOM.summaryWeight) {
+      DOM.summaryWeight.textContent = `~${scaledWeight} grams`;
+    }
+
+    // Sync default selections into order drawer if not yet touched by user
+    if (DOM.orderSizeSelect) {
+      const nearestSize = `US ${Math.round(size)}`;
+      for (const opt of DOM.orderSizeSelect.options) {
+        if (opt.value.startsWith(nearestSize)) {
+          DOM.orderSizeSelect.value = opt.value;
+          break;
+        }
+      }
+    }
+
+    if (DOM.orderFinishSelect) {
+      for (const opt of DOM.orderFinishSelect.options) {
+        if (opt.value.toLowerCase().includes(finish.toLowerCase()) || finish.toLowerCase().includes(opt.value.toLowerCase())) {
+          DOM.orderFinishSelect.value = opt.value;
+          break;
+        }
+      }
+    }
+  }
+
+  // =========================================================================
+  // 8. RING ANATOMY INTERACTIVE HOTSPOTS
+  // =========================================================================
+  function setupRingHotspots() {
+    function activatePin(pinId) {
+      // Activate hotspot
+      DOM.hotspots.forEach(pin => {
+        if (pin.getAttribute('data-pin') === String(pinId)) {
+          pin.classList.add('active');
+        } else {
+          pin.classList.remove('active');
+        }
+      });
+
+      // Activate spec card
+      DOM.specCards.forEach(card => {
+        if (card.getAttribute('data-spec-card') === String(pinId)) {
+          card.classList.add('active');
+        } else {
+          card.classList.remove('active');
+        }
+      });
+    }
+
+    DOM.hotspots.forEach(pin => {
+      const pinId = pin.getAttribute('data-pin');
+      pin.addEventListener('click', () => activatePin(pinId));
+      pin.addEventListener('mouseenter', () => activatePin(pinId));
+      pin.addEventListener('focus', () => activatePin(pinId));
+    });
+
+    DOM.specCards.forEach(card => {
+      const cardId = card.getAttribute('data-spec-card');
+      card.addEventListener('click', () => activatePin(cardId));
+      card.addEventListener('mouseenter', () => activatePin(cardId));
+    });
+  }
+
+  // =========================================================================
+  // 9. FAQ ACCORDION
+  // =========================================================================
+  function setupFAQAccordion() {
+    DOM.faqItems.forEach(item => {
+      const trigger = item.querySelector('.faq-trigger');
+      if (!trigger) return;
+
+      trigger.addEventListener('click', () => {
+        const isActive = item.classList.contains('active');
+
+        // Close other items
+        DOM.faqItems.forEach(otherItem => {
+          otherItem.classList.remove('active');
+          const otherTrigger = otherItem.querySelector('.faq-trigger');
+          if (otherTrigger) otherTrigger.setAttribute('aria-expanded', 'false');
+        });
+
+        if (!isActive) {
+          item.classList.add('active');
+          trigger.setAttribute('aria-expanded', 'true');
+        }
+      });
+    });
+  }
+
+  // =========================================================================
+  // 10. SLIDE-OUT ATELIER ORDER DRAWER
+  // =========================================================================
+  function setupOrderDrawer() {
+    function openDrawer() {
+      if (DOM.orderDrawer && DOM.drawerBackdrop) {
+        DOM.orderDrawer.classList.add('active');
+        DOM.orderDrawer.setAttribute('aria-hidden', 'false');
+        DOM.drawerBackdrop.classList.add('active');
+        DOM.drawerBackdrop.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('drawer-open');
+
+        // Focus first field
+        const nameInput = document.getElementById('order-name');
+        if (nameInput) setTimeout(() => nameInput.focus(), 250);
+      }
+    }
+
+    function closeDrawer() {
+      if (DOM.orderDrawer && DOM.drawerBackdrop) {
+        DOM.orderDrawer.classList.remove('active');
+        DOM.orderDrawer.setAttribute('aria-hidden', 'true');
+        DOM.drawerBackdrop.classList.remove('active');
+        DOM.drawerBackdrop.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('drawer-open');
+      }
+    }
+
+    DOM.openDrawerBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        openDrawer();
+      });
+    });
+
+    if (DOM.drawerCloseBtn) {
+      DOM.drawerCloseBtn.addEventListener('click', closeDrawer);
+    }
+
+    if (DOM.drawerBackdrop) {
+      DOM.drawerBackdrop.addEventListener('click', closeDrawer);
+    }
+
+    // Escape key closes drawer
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && DOM.orderDrawer && DOM.orderDrawer.classList.contains('active')) {
+        closeDrawer();
+      }
+    });
+
+    // Form Submission Handling
+    if (DOM.orderForm && DOM.orderSuccess) {
+      DOM.orderForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        DOM.orderForm.style.display = 'none';
+        DOM.orderSuccess.style.display = 'flex';
+      });
+    }
+
+    if (DOM.closeSuccessBtn) {
+      DOM.closeSuccessBtn.addEventListener('click', () => {
+        closeDrawer();
+        setTimeout(() => {
+          if (DOM.orderForm && DOM.orderSuccess) {
+            DOM.orderForm.reset();
+            DOM.orderForm.style.display = 'flex';
+            DOM.orderSuccess.style.display = 'none';
+          }
+        }, 400);
+      });
+    }
+  }
+
+  // =========================================================================
+  // 11. NAVIGATION SCROLL SPY & HEADER SCROLL STATE
   // =========================================================================
   function updateHeaderOnScroll() {
     const scrollY = window.scrollY;
@@ -496,8 +834,28 @@
     }
   }
 
+  function updateNavSpy() {
+    const scrollPosition = window.scrollY + 120;
+
+    DOM.sections.forEach(sec => {
+      const top = sec.offsetTop;
+      const height = sec.offsetHeight;
+      const id = sec.getAttribute('id');
+
+      if (scrollPosition >= top && scrollPosition < top + height) {
+        DOM.navLinks.forEach(link => {
+          if (link.getAttribute('href') === `#${id}`) {
+            link.classList.add('active');
+          } else {
+            link.classList.remove('active');
+          }
+        });
+      }
+    });
+  }
+
   // =========================================================================
-  // 8. REDUCED MOTION SUPPORT
+  // 12. ACCESSIBILITY & PREFERS-REDUCED-MOTION
   // =========================================================================
   function setupReducedMotion() {
     if (!state.reducedMotion) return;
@@ -506,53 +864,73 @@
       DOM.reducedMotionControl.style.display = 'flex';
 
       DOM.reducedMotionSlider.addEventListener('input', (e) => {
-        const val = parseInt(e.target.value, 10);
-        state.currentFrame = val;
-        state.targetFrame = val;
-        renderFrame(val);
-        updateHUD(val, (val - 1) / (CONFIG.totalFrames - 1));
+        const pct = parseInt(e.target.value, 10);
+        const targetFrame = Math.min(
+          CONFIG.totalFrames,
+          Math.max(1, Math.round((pct / 100) * (CONFIG.totalFrames - 1)) + 1)
+        );
 
-        if (DOM.reducedMotionVal) {
-          DOM.reducedMotionVal.textContent = `Frame ${val} of ${CONFIG.totalFrames}`;
+        state.currentFrame = targetFrame;
+        state.targetFrame = targetFrame;
+        renderFrame(targetFrame);
+        updateHUD(targetFrame, pct / 100);
+
+        // Synchronize scroll position smoothly
+        if (DOM.heroTrack) {
+          const scrollRange = DOM.heroTrack.offsetHeight - window.innerHeight;
+          const trackTop = DOM.heroTrack.offsetTop;
+          window.scrollTo(0, trackTop + (pct / 100) * scrollRange);
         }
       });
     }
   }
 
   // =========================================================================
-  // 9. INITIALIZATION & EVENT LISTENERS
+  // 13. INITIALIZATION
   // =========================================================================
   function init() {
     initPreloader();
+    setupCanvasDirectDrag();
     setupTimelineEvents();
     setupStageNavigation();
+    setupCustomizer();
+    setupRingHotspots();
+    setupFAQAccordion();
+    setupOrderDrawer();
     setupReducedMotion();
 
-    // Resize listener (debounced)
+    // Debounced Resize listener
     let resizeTimeout;
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(resizeCanvas, 100);
+      resizeTimeout = setTimeout(resizeCanvas, 80);
     }, { passive: true });
 
-    // Scroll listener (passive)
+    // Passive Scroll listener
     window.addEventListener('scroll', () => {
       updateScroll();
       updateHeaderOnScroll();
+      updateNavSpy();
     }, { passive: true });
 
-    // Initial check
+    // Initial pass
     updateScroll();
     updateHeaderOnScroll();
+    updateNavSpy();
 
     // Start RAF loop
     requestAnimationFrame(tick);
 
-    // Expose for testing & inspection
-    window.__BISHU__ = { state, CONFIG, scrollToFrame, renderFrame };
+    // Global testing API
+    window.__BISHU__ = {
+      state,
+      CONFIG,
+      scrollToFrame,
+      renderFrame,
+      updateCustomizerPreview
+    };
   }
 
-  // Run on DOM ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
